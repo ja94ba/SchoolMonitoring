@@ -1,0 +1,2 @@
+# SchoolMonitoring
+A SchoolMonitoring application.
