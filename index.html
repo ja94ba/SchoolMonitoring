@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeClass Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   styles.css  -  SafeClass Monitor
+   Layout idea: navy sidebar + light content on desktop; top bar + bottom
+   tab bar on phones. Red = emergency, green = normal, gray = offline.
+   ========================================================================== */
+
+:root {
+  --navy: #10284f;
+  --navy-2: #1a3a6c;
+  --navy-50: #edf1f8;
+  --navy-100: #d9e2f1;
+  --ink: #152036;
+  --muted: #5a6578;
+  --line: #e1e6ef;
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+
+  --red: #c4262e;
+  --red-dark: #9f1b22;
+  --red-50: #fdeeee;
+  --red-100: #f6cfd2;
+  --green: #17803f;
+  --green-50: #e7f5ed;
+  --gray: #66707f;
+  --gray-50: #eff1f5;
+  --gray-100: #dde1e8;
+
+  --font-display: 'Lexend', system-ui, sans-serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 40, 79, .06), 0 1px 8px rgba(16, 40, 79, .04);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid #2f6fd6; outline-offset: 2px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* Icons */
+.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- App shell ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.main { min-width: 0; }
+.content { padding: 24px 28px 48px; max-width: 1200px; }
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  position: sticky; top: 0; align-self: start; height: 100vh;
+  background: var(--navy); color: #fff;
+  display: flex; flex-direction: column; padding: 20px 14px;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; }
+.brand-mark { width: 40px; height: 40px; border-radius: 11px; background: #fff; color: var(--navy); display: grid; place-items: center; flex: none; }
+.brand-mark .i { width: 24px; height: 24px; }
+.brand-text { min-width: 0; }
+.brand-text strong { display: block; font: 600 18px/1.2 var(--font-display); }
+.brand-text small { display: block; color: #b8c6e0; font-size: 12.5px; line-height: 1.3; margin-top: 2px; }
+
+.nav { display: grid; gap: 4px; }
+.nav-link {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 10px; color: #c9d5ea; font-weight: 600;
+}
+.nav-link:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav-link[aria-current="page"] { background: rgba(255, 255, 255, .14); color: #fff; }
+.nav-link[aria-current="page"]::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 4px 4px 0; background: #fff; }
+.nav-link .badge { margin-left: auto; }
+.sidebar-foot { margin-top: auto; padding: 10px 12px; font-size: 12.5px; color: #b8c6e0; display: flex; align-items: center; gap: 8px; }
+
+.badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; }
+
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gray-100); flex: none; }
+.dot--on { background: #3ecf7b; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand-mark--sm { display: none; width: 36px; height: 36px; background: var(--navy); color: #fff; }
+.topbar-title { min-width: 0; flex: 1; }
+.topbar-title h1 { font: 600 22px/1.25 var(--font-display); color: var(--navy); }
+.topbar-title p { color: var(--muted); font-size: 13.5px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.clock { color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; }
+.bell { position: relative; width: 42px; height: 42px; border-radius: 11px; border: 1px solid var(--line); background: #fff; display: grid; place-items: center; color: var(--navy); }
+.bell:hover { background: var(--navy-50); }
+.badge--bell { position: absolute; top: -6px; right: -6px; border: 2px solid #fff; box-sizing: content-box; min-width: 18px; height: 18px; font-size: 11px; }
+.user { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--navy-50); color: var(--navy); font: 600 13px/1 var(--font-display); display: grid; place-items: center; border: 1px solid var(--navy-100); }
+.user-text b { display: block; font-size: 14px; line-height: 1.25; }
+.user-text small { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Emergency banner ---------- */
+.banner { display: flex; align-items: center; gap: 14px; background: var(--red); color: #fff; padding: 14px 16px; border-radius: var(--radius); margin-bottom: 18px; box-shadow: 0 4px 14px rgba(196, 38, 46, .28); }
+.banner .i { width: 26px; height: 26px; }
+.banner-text { flex: 1; min-width: 0; }
+.banner-text strong { display: block; font: 600 16px/1.3 var(--font-display); }
+.banner-text span { font-size: 13.5px; opacity: .95; }
+.banner .btn { flex: none; }
+body[data-view="alerts"] #banner { display: none; }
+
+/* ---------- Buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid transparent; font-weight: 700; font-size: 14px; line-height: 1.2; }
+.btn .i { width: 16px; height: 16px; }
+.btn--sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn--danger { background: var(--red); color: #fff; }
+.btn--danger:hover { background: var(--red-dark); }
+.btn--primary { background: var(--navy); color: #fff; }
+.btn--primary:hover { background: var(--navy-2); }
+.btn--outline { background: #fff; border-color: var(--navy); color: var(--navy); }
+.btn--outline:hover { background: var(--navy-50); }
+.btn--ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+.btn--ghost:hover:not([disabled]) { background: var(--gray-50); }
+.btn--light { background: #fff; color: var(--red-dark); }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.link { background: none; border: 0; padding: 0; color: var(--navy-2); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; text-align: left; }
+.link:hover { color: var(--navy); }
+
+/* ---------- Panels ---------- */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; min-width: 0; }
+.panel--flush { padding: 0; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.panel-head--pad { padding: 16px 18px 12px; margin: 0; }
+.panel-head h2 { font: 600 16px/1.3 var(--font-display); color: var(--navy); display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Summary cards ---------- */
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.stat { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 14px 20px; box-shadow: var(--shadow); }
+.stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--accent); }
+.stat-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.stat-icon { grid-column: 2; grid-row: 1 / span 2; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent); }
+.stat-num { font: 600 36px/1.15 var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat-note { grid-column: 1 / -1; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+.stat--total { --accent: var(--navy-2); --accent-bg: var(--navy-50); }
+.stat--normal { --accent: var(--green); --accent-bg: var(--green-50); }
+.stat--emergency { --accent: var(--red); --accent-bg: var(--red-50); }
+.stat--offline { --accent: var(--gray); --accent-bg: var(--gray-50); }
+.stat--emergency.is-hot { background: var(--red-50); border-color: var(--red-100); }
+.stat--emergency.is-hot .stat-num { color: var(--red); }
+
+/* ---------- Dashboard grid ---------- */
+.dash-grid { display: grid; gap: 16px; align-items: start; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "rooms alerts" "rooms feed" "rooms demo"; }
+.area-rooms { grid-area: rooms; }
+.area-alerts { grid-area: alerts; }
+.area-feed { grid-area: feed; }
+.area-demo { grid-area: demo; }
+
+/* ---------- Status pills ---------- */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px 4px 8px; border-radius: 999px; font-size: 12.5px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.pill .i { width: 14px; height: 14px; stroke-width: 2.3; }
+.pill--normal, .pill--resolved { background: var(--green-50); color: var(--green); }
+.pill--emergency, .pill--active { background: var(--red); color: #fff; }
+.pill--offline { background: var(--gray-50); color: var(--gray); box-shadow: inset 0 0 0 1px var(--gray-100); }
+.pill--acknowledged { background: #fff; color: var(--red); box-shadow: inset 0 0 0 1.5px var(--red); }
+
+/* ---------- Classroom rows ---------- */
+.room-head, .room-row { display: grid; grid-template-columns: minmax(0, 2.4fr) 124px minmax(0, 1.2fr) minmax(0, 1.1fr) 18px; gap: 12px; align-items: center; padding: 12px 18px; }
+.room-head { background: var(--navy-50); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: 10px; padding-bottom: 10px; }
+.room-row { position: relative; width: 100%; border: 0; border-top: 1px solid var(--line); background: var(--surface); text-align: left; }
+.room-row:hover { background: #f7f9fd; }
+.room-row--emergency { background: var(--red-50); }
+.room-row--emergency:hover { background: #fbe4e5; }
+.room-row--emergency::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--red); }
+.room-row--offline .room-name b { color: var(--gray); }
+.room-row--offline .room-code { background: var(--gray-50); color: var(--gray); }
+.cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cell--name { gap: 12px; }
+.cell--time { color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.cell--time .i { width: 15px; height: 15px; }
+.chev { color: var(--gray); width: 16px; height: 16px; }
+.room-code { flex: none; min-width: 56px; text-align: center; padding: 4px 8px; border-radius: 7px; background: var(--navy-50); color: var(--navy); font: 600 12.5px/1.2 var(--font-display); }
+.room-name { min-width: 0; }
+.room-name b { display: block; font-weight: 700; font-size: 15px; line-height: 1.3; }
+.room-name small { display: block; color: var(--muted); font-size: 12.5px; }
+
+.conn { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.conn .dot { background: #2fb164; }
+.conn--off { color: var(--gray); }
+.conn--off .dot { background: var(--gray-100); }
+.signal { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.signal i { display: block; width: 3px; border-radius: 1px; background: var(--gray-100); }
+.signal i:nth-child(1) { height: 5px; }
+.signal i:nth-child(2) { height: 8px; }
+.signal i:nth-child(3) { height: 11px; }
+.signal i:nth-child(4) { height: 14px; }
+.signal[data-level="1"] i:nth-child(-n+1),
+.signal[data-level="2"] i:nth-child(-n+2),
+.signal[data-level="3"] i:nth-child(-n+3),
+.signal[data-level="4"] i:nth-child(-n+4) { background: var(--green); }
+
+/* Compact list used on the dashboard */
+.room-list--compact .room-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+.room-list--compact .room-head { display: none; }
+.room-list--compact .cell--conn, .room-list--compact .chev { display: none; }
+.room-list--compact .cell--time { min-width: 96px; justify-content: flex-end; }
+.room-list--compact .room-row:first-child { border-top: 1px solid var(--line); }
+
+/* ---------- Classrooms toolbar ---------- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+.search { flex: 1 1 280px; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; min-height: 44px; color: var(--muted); }
+.search:focus-within { border-color: var(--navy-2); box-shadow: 0 0 0 3px rgba(26, 58, 108, .15); }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); height: 42px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; }
+.chip .count { min-width: 22px; padding: 1px 6px; border-radius: 10px; background: var(--gray-50); color: var(--muted); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.chip:hover { background: var(--gray-50); }
+.chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+.chip[aria-pressed="true"] .count { background: rgba(255, 255, 255, .2); color: #fff; }
+.result-note { margin-top: 10px; }
+
+.empty { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 28px 16px; color: var(--muted); }
+.empty .i { width: 30px; height: 30px; color: var(--green); }
+.empty--plain .i { color: var(--gray); }
+.empty b { color: var(--ink); font-size: 15px; }
+
+/* ---------- Alerts ---------- */
+.section-title { display: flex; align-items: center; gap: 10px; font: 600 18px/1.3 var(--font-display); color: var(--navy); margin: 4px 0 12px; }
+.section-title--muted { color: var(--muted); margin-top: 28px; }
+.count-pill { min-width: 26px; padding: 2px 9px; border-radius: 13px; background: var(--red); color: #fff; font: 600 13px/1.4 var(--font-body); text-align: center; }
+.count-pill--muted { background: var(--gray-100); color: var(--muted); }
+.alert-list { display: grid; gap: 12px; }
+.alert { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--gray-100); border-radius: var(--radius); padding: 14px 16px; }
+.alert--active { background: var(--red-50); border-color: var(--red-100); border-left-color: var(--red); }
+.alert--acknowledged { border-color: var(--red-100); border-left-color: var(--red); }
+.alert--resolved { background: var(--gray-50); border-left-color: var(--green); }
+.alert-main { display: flex; gap: 12px; min-width: 0; }
+.alert-icon { flex: none; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--red); color: #fff; }
+.alert--acknowledged .alert-icon { background: var(--red-50); color: var(--red); }
+.alert--resolved .alert-icon { background: var(--green-50); color: var(--green); }
+.alert-body { min-width: 0; display: grid; gap: 3px; }
+.alert-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.alert-top h3 { font: 600 16px/1.3 var(--font-display); }
+.alert-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted); font-size: 13.5px; }
+.alert-meta .i { width: 15px; height: 15px; }
+.alert-meta .strong { color: var(--ink); font-weight: 600; }
+.alert-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.alert--compact { grid-template-columns: minmax(0, 1fr); }
+.alert--compact .alert-actions { justify-content: flex-start; }
+
+/* ---------- Activity feed ---------- */
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.feed-item { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.feed-item:first-child { border-top: 0; }
+.feed-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; background: var(--gray); }
+.feed-item--normal .feed-dot { background: #2fb164; }
+.feed-item--emergency .feed-dot { background: var(--red); }
+.feed-time { color: var(--muted); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Settings ---------- */
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.span-2 { grid-column: 1 / -1; }
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field input { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; color: var(--ink); background: #fff; width: 100%; }
+.field input:focus { outline: 0; border-color: var(--navy-2); box-shadow: 0 0 0 3px rgba(26, 58, 108, .15); }
+.field input[readonly] { background: var(--gray-50); color: var(--muted); }
+.toggles { list-style: none; margin: 0 0 12px; padding: 0; }
+.toggles li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.toggles li:first-child { border-top: 0; padding-top: 0; }
+.toggles b { display: block; font-size: 14.5px; }
+.toggles small { color: var(--muted); font-size: 12.5px; }
+.switch { position: relative; flex: none; width: 46px; height: 26px; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.track { position: absolute; inset: 0; border-radius: 13px; background: var(--gray-100); transition: background .15s; }
+.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .15s; }
+.switch input:checked + .track { background: var(--navy-2); }
+.switch input:checked + .track::after { transform: translateX(20px); }
+.switch input:focus-visible + .track { outline: 3px solid #2f6fd6; outline-offset: 2px; }
+.reg-head, .reg-row { display: grid; grid-template-columns: 80px minmax(0, 1.6fr) minmax(0, 1.1fr) minmax(0, 1.3fr); gap: 12px; align-items: center; padding: 11px 18px; }
+.reg-head { background: var(--navy-50); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.reg-row { border-top: 1px solid var(--line); font-size: 14px; }
+.reg-row .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; color: var(--muted); }
+
+/* ---------- Dialog ---------- */
+.dialog { border: 0; padding: 0; border-radius: 16px; width: min(560px, calc(100% - 24px)); background: #fff; color: var(--ink); box-shadow: 0 20px 60px rgba(11, 28, 56, .35); }
+.dialog::backdrop { background: rgba(11, 28, 56, .5); }
+.dlg { padding: 20px; display: grid; gap: 16px; }
+.dlg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.dlg-head h2 { font: 600 20px/1.3 var(--font-display); color: var(--navy); margin-top: 8px; }
+.dlg-head p { color: var(--muted); font-size: 14px; }
+.icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: #fff; display: grid; place-items: center; flex: none; }
+.icon-btn:hover { background: var(--gray-50); }
+.detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; padding: 14px; background: var(--bg); border-radius: 10px; }
+.detail dt { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.detail dd { margin: 2px 0 0; font-weight: 600; font-size: 14.5px; }
+.dlg h3 { font: 600 15px/1.3 var(--font-display); color: var(--navy); }
+.history { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.history li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+.history small { display: block; color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Toast ---------- */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); max-width: calc(100% - 32px); background: var(--navy); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(11, 28, 56, .3); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Bottom nav (phones only) ---------- */
+.bottom-nav { display: none; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .user-text { display: none; }
+}
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; }
+  .brand-mark--sm { display: grid; }
+  .topbar { padding: 10px 16px; }
+  .topbar-title h1 { font-size: 18px; }
+  .topbar-title p { font-size: 12.5px; }
+  .clock { display: none; }
+  .topbar-right { gap: 10px; }
+  .content { padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); }
+  .summary { gap: 10px; }
+  .stat { padding: 14px 12px 12px 16px; }
+  .stat-num { font-size: 30px; }
+  .dash-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "alerts" "rooms" "feed" "demo"; }
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -2px 12px rgba(16, 40, 79, .06); }
+  .tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 62px; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .tab .i { width: 22px; height: 22px; }
+  .tab[aria-current="page"] { color: var(--navy); }
+  .tab[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 24%; right: 24%; height: 3px; border-radius: 0 0 3px 3px; background: var(--navy); }
+  .badge--tab { position: absolute; top: 6px; left: calc(50% + 6px); min-width: 18px; height: 18px; font-size: 11px; }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 640px) {
+  .room-head { display: none; }
+  .room-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name status" "conn time"; gap: 8px 12px; padding: 12px 16px; }
+  .cell--name { grid-area: name; }
+  .cell--status { grid-area: status; justify-self: end; }
+  .cell--conn { grid-area: conn; }
+  .cell--time { grid-area: time; justify-self: end; }
+  .chev { display: none; }
+  .room-list--compact .room-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name status" "time time"; }
+  .room-list--compact .cell--time { justify-self: start; justify-content: flex-start; min-width: 0; padding-left: 68px; }
+  .alert { grid-template-columns: minmax(0, 1fr); }
+  .alert-actions { justify-content: stretch; }
+  .alert-actions .btn { flex: 1 1 140px; }
+  .reg-head { display: none; }
+  .reg-row { grid-template-columns: 70px minmax(0, 1fr); row-gap: 2px; }
+  .reg-row .mono, .reg-row .loc { grid-column: 2; font-size: 13px; color: var(--muted); }
+  .detail { grid-template-columns: minmax(0, 1fr); }
+  .dialog { margin: auto auto 0; width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; }
+  .banner { flex-wrap: wrap; }
+  .banner .btn { width: 100%; }
+}
+
+@media (max-width: 380px) {
+  .stat-num { font-size: 26px; }
+  .stat-icon { display: none; }
+}
+
+/* One gentle motion cue: the banner dot. Off for reduced-motion users. */
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .7); } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } }
+.banner .pulse { width: 12px; height: 12px; border-radius: 50%; background: #fff; flex: none; animation: pulse 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .banner .pulse { animation: none; }
+  .toast, .track, .track::after { transition: none; }
+}
+
+</style>
+</head>
+<body data-view="dashboard">
+
+<!-- Icon sprite: reused everywhere with <svg class="i"><use href="#i-name"/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-room" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M3 21h18M12 12h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+
+  <!-- ===== Sidebar (desktop) ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="i"><use href="#i-shield"/></svg></span>
+      <div class="brand-text"><strong>SafeClass</strong><small class="js-school">School name</small></div>
+    </div>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="nav-link" href="#dashboard" data-action="go" data-view="dashboard"><svg class="i"><use href="#i-dashboard"/></svg><span>Dashboard</span></a>
+      <a class="nav-link" href="#classrooms" data-action="go" data-view="classrooms"><svg class="i"><use href="#i-room"/></svg><span>Classrooms</span></a>
+      <a class="nav-link" href="#alerts" data-action="go" data-view="alerts"><svg class="i"><use href="#i-alert"/></svg><span>Emergency Alerts</span><span class="badge" data-alert-badge hidden></span></a>
+      <a class="nav-link" href="#app-settings" data-action="go" data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot"><span class="dot dot--on"></span>Demo mode · sample data</div>
+  </aside>
+
+  <div class="main">
+
+    <!-- ===== Top bar ===== -->
+    <header class="topbar">
+      <span class="brand-mark brand-mark--sm"><svg class="i"><use href="#i-shield"/></svg></span>
+      <div class="topbar-title">
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSub">Overview of classroom conditions</p>
+      </div>
+      <div class="topbar-right">
+        <div class="clock" id="clock" aria-hidden="true"></div>
+        <button class="bell" data-action="go" data-view="alerts" aria-label="Open emergency alerts">
+          <svg class="i"><use href="#i-alert"/></svg>
+          <span class="badge badge--bell" data-alert-badge hidden></span>
+        </button>
+        <div class="user">
+          <span class="avatar" aria-hidden="true">MR</span>
+          <div class="user-text"><b>Maria Reyes</b><small>Safety Coordinator</small></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div id="banner"></div>
+
+      <!-- ===== 1. Dashboard ===== -->
+      <section class="view" data-view="dashboard" aria-label="Dashboard">
+        <div class="summary" id="summary"></div>
+        <div class="dash-grid">
+          <div class="panel area-alerts">
+            <div class="panel-head"><h2>Active alerts</h2><a class="link" href="#alerts" data-action="go" data-view="alerts">View all</a></div>
+            <div class="alert-list" id="dashAlerts"></div>
+          </div>
+          <div class="panel panel--flush area-rooms">
+            <div class="panel-head panel-head--pad"><h2>Classroom status</h2><a class="link" href="#classrooms" data-action="go" data-view="classrooms">View all</a></div>
+            <div class="room-list room-list--compact" id="dashRooms"></div>
+          </div>
+          <div class="panel area-feed">
+            <div class="panel-head"><h2>Recent status updates</h2></div>
+            <ul class="feed" id="feed"></ul>
+          </div>
+          <div class="panel area-demo">
+            <div class="panel-head"><h2>Demo controls</h2></div>
+            <p class="muted small">For presentations. Triggers a sample alert on a random classroom so you can show how the dashboard reacts. No device is involved yet.</p>
+            <div class="btn-row">
+              <button class="btn btn--danger" data-action="simulate"><svg class="i"><use href="#i-play"/></svg>Simulate alert</button>
+              <button class="btn btn--ghost" data-action="reset"><svg class="i"><use href="#i-reset"/></svg>Reset demo data</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 2. Classrooms ===== -->
+      <section class="view" data-view="classrooms" aria-label="Classrooms" hidden>
+        <div class="toolbar">
+          <label class="search" for="search">
+            <svg class="i"><use href="#i-search"/></svg>
+            <input id="search" type="search" placeholder="Search room, grade, adviser or device" autocomplete="off">
+          </label>
+          <div class="chips" role="group" aria-label="Filter by status">
+            <button class="chip" data-action="filter" data-filter="all" aria-pressed="true">All <span class="count" data-count="all">0</span></button>
+            <button class="chip chip--normal" data-action="filter" data-filter="normal" aria-pressed="false">Normal <span class="count" data-count="normal">0</span></button>
+            <button class="chip chip--emergency" data-action="filter" data-filter="emergency" aria-pressed="false">Emergency <span class="count" data-count="emergency">0</span></button>
+            <button class="chip chip--offline" data-action="filter" data-filter="offline" aria-pressed="false">Offline <span class="count" data-count="offline">0</span></button>
+          </div>
+        </div>
+        <div class="panel panel--flush">
+          <div class="room-head" aria-hidden="true"><span>Classroom</span><span>Status</span><span>Connection</span><span>Last update</span><span></span></div>
+          <div class="room-list" id="roomList"></div>
+        </div>
+        <p class="muted small result-note" id="resultNote"></p>
+      </section>
+
+      <!-- ===== 3. Emergency alerts ===== -->
+      <section class="view" data-view="alerts" aria-label="Emergency alerts" hidden>
+        <h2 class="section-title">Active alerts <span class="count-pill" id="activeCount">0</span></h2>
+        <div class="alert-list" id="alertsActive"></div>
+        <h2 class="section-title section-title--muted">Resolved <span class="count-pill count-pill--muted" id="resolvedCount">0</span></h2>
+        <div class="alert-list" id="alertsResolved"></div>
+      </section>
+
+      <!-- ===== 4. Settings (placeholders) ===== -->
+      <section class="view" data-view="settings" aria-label="Settings" hidden>
+        <div class="settings-grid">
+          <div class="panel">
+            <div class="panel-head"><h2>School</h2></div>
+            <div class="field"><label for="schoolName">School name</label><input id="schoolName" type="text" maxlength="60"></div>
+            <div class="field"><label for="schoolId">School ID</label><input id="schoolId" type="text" value="301234 (sample)" readonly></div>
+            <div class="field"><label for="schoolAddr">Address</label><input id="schoolAddr" type="text" value="Poblacion, Sample City (placeholder)" readonly></div>
+            <button class="btn btn--primary" data-action="save-school">Save school name</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>Account</h2></div>
+            <div class="field"><label for="accName">Full name</label><input id="accName" type="text" value="Maria Reyes" readonly></div>
+            <div class="field"><label for="accRole">Role</label><input id="accRole" type="text" value="Safety Coordinator" readonly></div>
+            <div class="field"><label for="accEmail">Email</label><input id="accEmail" type="text" value="m.reyes@school.example" readonly></div>
+            <div class="btn-row">
+              <button class="btn btn--ghost" disabled>Change password</button>
+              <button class="btn btn--ghost" disabled>Sign out</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>Notification preferences</h2></div>
+            <ul class="toggles">
+              <li><div><b>In-app alert banner</b><small>Show a red banner on every screen during an alert.</small></div><label class="switch"><input type="checkbox" checked aria-label="In-app alert banner"><span class="track"></span></label></li>
+              <li><div><b>Alert sound</b><small>Play a tone when a new alert arrives.</small></div><label class="switch"><input type="checkbox" checked aria-label="Alert sound"><span class="track"></span></label></li>
+              <li><div><b>Push notifications</b><small>Notify this device even when the app is closed.</small></div><label class="switch"><input type="checkbox" checked aria-label="Push notifications"><span class="track"></span></label></li>
+              <li><div><b>SMS to security staff</b><small>Text the designated responders.</small></div><label class="switch"><input type="checkbox" aria-label="SMS to security staff"><span class="track"></span></label></li>
+              <li><div><b>Daily email summary</b><small>Send a status report each afternoon.</small></div><label class="switch"><input type="checkbox" aria-label="Daily email summary"><span class="track"></span></label></li>
+            </ul>
+            <p class="muted small">Placeholders for now. These switches are not connected to anything yet.</p>
+          </div>
+
+          <div class="panel panel--flush span-2">
+            <div class="panel-head panel-head--pad">
+              <h2>Registered classrooms <span class="count-pill count-pill--muted" id="regCount">0</span></h2>
+              <button class="btn btn--ghost btn--sm" disabled>Add classroom</button>
+            </div>
+            <div class="reg-head" aria-hidden="true"><span>Room</span><span>Classroom</span><span>Device ID</span><span>Location</span></div>
+            <div id="regList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Bottom navigation (phones) ===== -->
+<nav class="bottom-nav" aria-label="Main navigation">
+  <a class="tab" href="#dashboard" data-action="go" data-view="dashboard"><svg class="i"><use href="#i-dashboard"/></svg><span>Dashboard</span></a>
+  <a class="tab" href="#classrooms" data-action="go" data-view="classrooms"><svg class="i"><use href="#i-room"/></svg><span>Classrooms</span></a>
+  <a class="tab" href="#alerts" data-action="go" data-view="alerts"><svg class="i"><use href="#i-alert"/></svg><span>Alerts</span><span class="badge badge--tab" data-alert-badge hidden></span></a>
+  <a class="tab" href="#app-settings" data-action="go" data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></a>
+</nav>
+
+<!-- Classroom details popup -->
+<dialog id="roomDialog" class="dialog" aria-labelledby="dlgTitle"><div id="dlgBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Order matters: data first, then app logic -->
+<script>
+/* ==========================================================================
+   data.js  -  SAMPLE DATA ONLY
+   --------------------------------------------------------------------------
+   Everything the app shows comes from this file for now.
+   Later, replace buildSampleData() with a function that loads the same shape
+   of data from your cloud database (e.g. Firebase) and updates it when an
+   ESP32 sends a new status or alert.
+
+   Classroom.status : 'normal' | 'emergency' | 'offline'
+   Alert.status     : 'active' | 'acknowledged' | 'resolved'
+   ========================================================================== */
+
+const SAMPLE_SCHOOL = { name: 'Mabini National High School' };
+
+const SAMPLE_USER = { name: 'Maria Reyes', role: 'Safety Coordinator' };
+
+// Sample alert types an ESP32 device could send. Edit freely.
+const ALERT_TYPES = [
+  'Silent Panic Button',
+  'Medical Assistance',
+  'Suspicious Person',
+  'Fire / Smoke Suspected'
+];
+
+function buildSampleData(now) {
+  const SEC = 1000, MIN = 60 * SEC, HOUR = 60 * MIN, DAY = 24 * HOUR;
+
+  const classrooms = [
+    { id: 'a101', code: 'A-101', name: 'Grade 7 – Sampaguita', building: 'Building A', floor: '1st floor', adviser: 'Ms. R. Santos',    device: 'ESP32-A101', signal: 4, status: 'normal',    lastUpdate: now - 9 * SEC },
+    { id: 'a102', code: 'A-102', name: 'Grade 7 – Dahlia',     building: 'Building A', floor: '1st floor', adviser: 'Ms. L. Cruz',      device: 'ESP32-A102', signal: 3, status: 'normal',    lastUpdate: now - 21 * SEC },
+    { id: 'a201', code: 'A-201', name: 'Grade 8 – Rizal',      building: 'Building A', floor: '2nd floor', adviser: 'Mr. P. Garcia',    device: 'ESP32-A201', signal: 4, status: 'emergency', lastUpdate: now - 4 * MIN },
+    { id: 'a202', code: 'A-202', name: 'Grade 8 – Bonifacio',  building: 'Building A', floor: '2nd floor', adviser: 'Ms. A. Mendoza',   device: 'ESP32-A202', signal: 2, status: 'normal',    lastUpdate: now - 33 * SEC },
+    { id: 'b101', code: 'B-101', name: 'Grade 9 – Newton',     building: 'Building B', floor: '1st floor', adviser: 'Mr. D. Ramos',     device: 'ESP32-B101', signal: 0, status: 'offline',   lastUpdate: now - 3 * HOUR - 12 * MIN },
+    { id: 'b102', code: 'B-102', name: 'Grade 9 – Einstein',   building: 'Building B', floor: '1st floor', adviser: 'Ms. K. Villanueva', device: 'ESP32-B102', signal: 3, status: 'normal',   lastUpdate: now - 14 * SEC },
+    { id: 'b201', code: 'B-201', name: 'Grade 10 – Curie',     building: 'Building B', floor: '2nd floor', adviser: 'Ms. T. Aquino',    device: 'ESP32-B201', signal: 4, status: 'normal',    lastUpdate: now - 41 * SEC },
+    { id: 'b202', code: 'B-202', name: 'Grade 10 – Galileo',   building: 'Building B', floor: '2nd floor', adviser: 'Mr. E. Bautista',  device: 'ESP32-B202', signal: 3, status: 'normal',    lastUpdate: now - 27 * SEC },
+    { id: 'c101', code: 'C-101', name: 'Computer Laboratory',  building: 'Building C', floor: '1st floor', adviser: 'Mr. N. Flores',    device: 'ESP32-C101', signal: 4, status: 'normal',    lastUpdate: now - 6 * SEC },
+    { id: 'c102', code: 'C-102', name: 'Science Laboratory',   building: 'Building C', floor: '1st floor', adviser: 'Ms. G. Navarro',   device: 'ESP32-C102', signal: 3, status: 'emergency', lastUpdate: now - 27 * MIN },
+    { id: 'c201', code: 'C-201', name: 'Grade 11 – STEM A',    building: 'Building C', floor: '2nd floor', adviser: 'Mr. H. Castillo',  device: 'ESP32-C201', signal: 2, status: 'normal',    lastUpdate: now - 18 * SEC },
+    { id: 'c202', code: 'C-202', name: 'Grade 12 – ABM',       building: 'Building C', floor: '2nd floor', adviser: 'Ms. S. Lim',       device: 'ESP32-C202', signal: 0, status: 'offline',   lastUpdate: now - DAY - 2 * HOUR }
+  ];
+
+  const alerts = [
+    { id: 'al5', roomId: 'a201', type: 'Silent Panic Button',    receivedAt: now - 4 * MIN,                 status: 'active' },
+    { id: 'al4', roomId: 'c102', type: 'Medical Assistance',     receivedAt: now - 27 * MIN,                status: 'acknowledged', ackAt: now - 24 * MIN },
+    { id: 'al3', roomId: 'b202', type: 'Silent Panic Button',    receivedAt: now - 3 * HOUR,                status: 'resolved', ackAt: now - 3 * HOUR + MIN, resolvedAt: now - 3 * HOUR + 7 * MIN },
+    { id: 'al2', roomId: 'a101', type: 'Suspicious Person',      receivedAt: now - DAY - 4 * HOUR,          status: 'resolved', ackAt: now - DAY - 4 * HOUR + 2 * MIN, resolvedAt: now - DAY - 4 * HOUR + 15 * MIN },
+    { id: 'al1', roomId: 'c101', type: 'Fire / Smoke Suspected', receivedAt: now - 2 * DAY - 5 * HOUR,     status: 'resolved', ackAt: now - 2 * DAY - 5 * HOUR + MIN, resolvedAt: now - 2 * DAY - 5 * HOUR + 9 * MIN }
+  ];
+
+  const activity = [
+    { ts: now - 9 * SEC,  kind: 'normal',    text: 'A-101 Grade 7 – Sampaguita reported normal conditions' },
+    { ts: now - 14 * SEC, kind: 'normal',    text: 'B-102 Grade 9 – Einstein reported normal conditions' },
+    { ts: now - 4 * MIN,  kind: 'emergency', text: 'A-201 Grade 8 – Rizal sent a Silent Panic Button alert' },
+    { ts: now - 27 * MIN, kind: 'emergency', text: 'C-102 Science Laboratory sent a Medical Assistance alert' },
+    { ts: now - 3 * HOUR - 12 * MIN, kind: 'offline', text: 'B-101 Grade 9 – Newton went offline' }
+  ];
+
+  return { classrooms, alerts, activity };
+}
+
+</script>
+<script>
+/* ==========================================================================
+   app.js  -  SafeClass Monitor (front-end prototype)
+   --------------------------------------------------------------------------
+   How this file is organised (top to bottom):
+     1. Setup & small helpers
+     2. State (the app's current data)
+     3. HTML "templates" (functions that return markup)
+     4. Render functions (put markup on the page)
+     5. Actions (acknowledge, resolve, simulate ...)
+     6. Navigation
+     7. Events & start-up
+
+   To connect real devices later, you mainly change step 5: instead of editing
+   `state` directly, call your cloud database / ESP32 messages, then call
+   renderAll() again.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- 1. Setup & helpers ---------- */
+  const $  = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icon = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+  const VIEWS = {
+    dashboard:  { hash: 'dashboard',    title: 'Dashboard',        sub: 'Overview of classroom conditions' },
+    classrooms: { hash: 'classrooms',   title: 'Classrooms',       sub: 'All registered classrooms and their devices' },
+    alerts:     { hash: 'alerts',       title: 'Emergency Alerts', sub: 'Acknowledge and resolve incoming alerts' },
+    settings:   { hash: 'app-settings', title: 'Settings',         sub: 'School, account and notification options' }
+  };
+
+  const STATUS = {
+    normal:    { label: 'Normal',    icon: 'check' },
+    emergency: { label: 'Emergency', icon: 'warn' },
+    offline:   { label: 'Offline',   icon: 'off' }
+  };
+  const ALERT_STATUS = {
+    active:       { label: 'Active',       icon: 'warn' },
+    acknowledged: { label: 'Acknowledged', icon: 'eye' },
+    resolved:     { label: 'Resolved',     icon: 'check' }
+  };
+  const SIGNAL_LABEL = ['No signal', 'Weak', 'Fair', 'Good', 'Strong'];
+
+  const pad = (n) => n;
+  const fmtTime = (ts) => new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const fmtDateTime = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + fmtTime(ts);
+
+  // "12 s ago", "4 min ago", "3 h ago", "2 days ago"
+  function rel(ts) {
+    const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (s < 5) return 'Just now';
+    if (s < 60) return s + ' s ago';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + ' min ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + ' h ago';
+    const d = Math.floor(h / 24);
+    return d + (d === 1 ? ' day ago' : ' days ago');
+  }
+  const relSpan = (ts, extra = '') => `<span data-rel data-ts="${ts}" ${extra}>${rel(ts)}</span>`;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  /* ---------- 2. State ---------- */
+  const state = Object.assign(
+    { view: 'dashboard', filter: 'all', query: '', school: { name: SAMPLE_SCHOOL.name }, openRoom: null },
+    buildSampleData(Date.now())
+  );
+
+  const roomById = (id) => state.classrooms.find((r) => r.id === id);
+  const openAlerts = () => state.alerts.filter((a) => a.status !== 'resolved');
+  const newAlerts = () => state.alerts.filter((a) => a.status === 'active');
+
+  function addActivity(text, kind) {
+    state.activity.unshift({ ts: Date.now(), kind, text });
+    state.activity.length = Math.min(state.activity.length, 30);
+  }
+
+  /* ---------- 3. Templates ---------- */
+  const pill = (map, key) => `<span class="pill pill--${key}">${icon(map[key].icon)}${map[key].label}</span>`;
+
+  function connHTML(r) {
+    const online = r.status !== 'offline';
+    return `<span class="conn ${online ? '' : 'conn--off'}"><span class="dot"></span>${online ? 'Online' : 'Offline'}` +
+           `<span class="signal" data-level="${online ? r.signal : 0}" title="${SIGNAL_LABEL[online ? r.signal : 0]}"><i></i><i></i><i></i><i></i></span></span>`;
+  }
+
+  function roomRow(r) {
+    return `<button class="room-row room-row--${r.status}" data-action="open-room" data-room="${r.id}">
+      <span class="cell cell--name"><span class="room-code">${esc(r.code)}</span>
+        <span class="room-name"><b>${esc(r.name)}</b><small>${esc(r.building)} · ${esc(r.floor)}</small></span></span>
+      <span class="cell cell--status">${pill(STATUS, r.status)}</span>
+      <span class="cell cell--conn">${connHTML(r)}</span>
+      <span class="cell cell--time">${icon('clock')}${relSpan(r.lastUpdate, `data-room-ts="${r.id}"`)}</span>
+      ${icon('chev', 'chev')}
+    </button>`;
+  }
+
+  function alertActions(a) {
+    if (a.status === 'active') {
+      return `<button class="btn btn--danger" data-action="ack" data-alert="${a.id}">${icon('eye')}Acknowledge</button>
+              <button class="btn btn--outline" data-action="resolve" data-alert="${a.id}">${icon('check')}Mark resolved</button>`;
+    }
+    if (a.status === 'acknowledged') {
+      return `<button class="btn btn--primary" data-action="resolve" data-alert="${a.id}">${icon('check')}Mark resolved</button>`;
+    }
+    return '';
+  }
+
+  function alertCard(a, compact) {
+    const r = roomById(a.roomId);
+    let handled = '';
+    if (a.status === 'acknowledged') handled = `Acknowledged by ${esc(SAMPLE_USER.name)} at ${fmtTime(a.ackAt)}`;
+    if (a.status === 'resolved') handled = `Resolved by ${esc(SAMPLE_USER.name)} at ${fmtTime(a.resolvedAt)}`;
+    const iconName = a.status === 'resolved' ? 'check' : a.status === 'acknowledged' ? 'eye' : 'warn';
+    return `<article class="alert alert--${a.status} ${compact ? 'alert--compact' : ''}">
+      <div class="alert-main">
+        <span class="alert-icon">${icon(iconName)}</span>
+        <div class="alert-body">
+          <div class="alert-top"><h3>${esc(a.type)}</h3>${pill(ALERT_STATUS, a.status)}</div>
+          <div class="alert-meta"><button class="link" data-action="open-room" data-room="${r.id}">${esc(r.code)} · ${esc(r.name)}</button></div>
+          <div class="alert-meta">${icon('clock')}<span>${fmtDateTime(a.receivedAt)}</span><span>(${relSpan(a.receivedAt)})</span></div>
+          ${handled ? `<div class="alert-meta">${handled}</div>` : ''}
+        </div>
+      </div>
+      <div class="alert-actions">${alertActions(a)}</div>
+    </article>`;
+  }
+
+  const emptyState = (title, text, plain) =>
+    `<div class="empty ${plain ? 'empty--plain' : ''}">${icon(plain ? 'search' : 'shield')}<b>${title}</b><span>${text}</span></div>`;
+
+  /* ---------- 4. Render functions ---------- */
+  function renderBrand() {
+    $$('.js-school').forEach((el) => (el.textContent = state.school.name));
+    $('#schoolName').value = state.school.name;
+    document.title = 'SafeClass Monitor';
+  }
+
+  function renderSummary() {
+    const count = (s) => state.classrooms.filter((r) => r.status === s).length;
+    const open = openAlerts().length, needAck = newAlerts().length;
+    const buildings = new Set(state.classrooms.map((r) => r.building)).size;
+    const stat = (cls, label, num, note, ic, extra = '') =>
+      `<div class="stat stat--${cls} ${extra}"><span class="stat-label">${label}</span><span class="stat-icon">${icon(ic)}</span><strong class="stat-num">${num}</strong><span class="stat-note">${note}</span></div>`;
+    $('#summary').innerHTML =
+      stat('total', 'Total classrooms', state.classrooms.length, `Across ${buildings} buildings`, 'room') +
+      stat('normal', 'Normal status', count('normal'), 'Reporting normal conditions', 'check') +
+      stat('emergency', 'Emergency alerts', open, open ? (needAck ? `${needAck} awaiting acknowledgment` : 'All acknowledged') : 'No active alerts', 'warn', open ? 'is-hot' : '') +
+      stat('offline', 'Offline devices', count('offline'), 'Not reporting', 'off');
+  }
+
+  function renderBanner() {
+    const list = newAlerts().sort((a, b) => b.receivedAt - a.receivedAt);
+    const el = $('#banner');
+    if (!list.length) { el.innerHTML = ''; return; }
+    const a = list[0], r = roomById(a.roomId);
+    const title = list.length > 1 ? `${list.length} emergency alerts need acknowledgment` : `Emergency alert: ${esc(r.name)}`;
+    const detail = `${esc(r.code)} · ${esc(a.type)} · ${relSpan(a.receivedAt)}`;
+    el.innerHTML = `<div class="banner" role="alert"><span class="pulse"></span>
+      <div class="banner-text"><strong>${title}</strong><span>${list.length > 1 ? 'Latest: ' : ''}${detail}</span></div>
+      <button class="btn btn--light" data-action="go" data-view="alerts">Respond</button></div>`;
+  }
+
+  function renderNavBadges() {
+    const n = openAlerts().length;
+    $$('[data-alert-badge]').forEach((el) => { el.textContent = n; el.hidden = n === 0; });
+  }
+
+  const severity = { emergency: 0, normal: 1, offline: 2 };
+
+  function renderDashboard() {
+    renderSummary();
+    const alerts = openAlerts().sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || b.receivedAt - a.receivedAt);
+    $('#dashAlerts').innerHTML = alerts.length
+      ? alerts.map((a) => alertCard(a, true)).join('')
+      : emptyState('All clear', 'No active alerts. Every online classroom is reporting normally.');
+    const rooms = state.classrooms.slice().sort((a, b) => severity[a.status] - severity[b.status] || a.code.localeCompare(b.code));
+    $('#dashRooms').innerHTML = rooms.slice(0, 8).map(roomRow).join('');
+    renderFeed();
+  }
+
+  function renderFeed() {
+    $('#feed').innerHTML = state.activity.slice(0, 6).map((e) =>
+      `<li class="feed-item feed-item--${e.kind}"><span class="feed-dot"></span><span>${esc(e.text)}</span>${relSpan(e.ts).replace('<span', '<span class="feed-time"')}</li>`
+    ).join('');
+  }
+
+  function renderClassrooms() {
+    const q = state.query.trim().toLowerCase();
+    const matchQuery = (r) => !q || [r.code, r.name, r.building, r.floor, r.adviser, r.device, STATUS[r.status].label].join(' ').toLowerCase().includes(q);
+    const base = state.classrooms.filter(matchQuery);
+    const shown = base.filter((r) => state.filter === 'all' || r.status === state.filter);
+
+    ['all', 'normal', 'emergency', 'offline'].forEach((k) => {
+      const n = k === 'all' ? base.length : base.filter((r) => r.status === k).length;
+      $(`[data-count="${k}"]`).textContent = n;
+    });
+    $$('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.filter === state.filter)));
+
+    $('#roomList').innerHTML = shown.length
+      ? shown.map(roomRow).join('')
+      : emptyState('No classrooms found', 'Try a different search or choose another status filter.', true);
+    $('#resultNote').textContent = `Showing ${shown.length} of ${state.classrooms.length} classrooms. Select a row to see device details.`;
+  }
+
+  function renderAlertsView() {
+    const active = openAlerts().sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || b.receivedAt - a.receivedAt);
+    const resolved = state.alerts.filter((a) => a.status === 'resolved').sort((a, b) => b.receivedAt - a.receivedAt);
+    $('#activeCount').textContent = active.length;
+    $('#activeCount').hidden = active.length === 0;
+    $('#resolvedCount').textContent = resolved.length;
+    $('#alertsActive').innerHTML = active.length
+      ? active.map((a) => alertCard(a, false)).join('')
+      : `<div class="panel">${emptyState('All clear', 'No active alerts. Every online classroom is reporting normally.')}</div>`;
+    $('#alertsResolved').innerHTML = resolved.length
+      ? resolved.map((a) => alertCard(a, false)).join('')
+      : `<div class="panel">${emptyState('Nothing resolved yet', 'Resolved alerts will be listed here.', true)}</div>`;
+  }
+
+  function renderSettingsRooms() {
+    $('#regCount').textContent = state.classrooms.length;
+    $('#regList').innerHTML = state.classrooms.map((r) =>
+      `<div class="reg-row"><span class="room-code">${esc(r.code)}</span><span><b>${esc(r.name)}</b></span><span class="mono">${esc(r.device)}</span><span class="loc muted">${esc(r.building)} · ${esc(r.floor)}</span></div>`
+    ).join('');
+  }
+
+  function renderDialog() {
+    const dlg = $('#roomDialog');
+    const r = state.openRoom && roomById(state.openRoom);
+    if (!r) return;
+    const history = state.alerts.filter((a) => a.roomId === r.id).sort((a, b) => b.receivedAt - a.receivedAt);
+    const pending = history.filter((a) => a.status !== 'resolved');
+    $('#dlgBody').innerHTML = `<div class="dlg">
+      <div class="dlg-head">
+        <div><span class="room-code">${esc(r.code)}</span><h2 id="dlgTitle">${esc(r.name)}</h2><p>${esc(r.building)} · ${esc(r.floor)}</p></div>
+        <button class="icon-btn" data-action="close-dialog" aria-label="Close details">${icon('close')}</button>
+      </div>
+      <div>${pill(STATUS, r.status)}</div>
+      <dl class="detail">
+        <div><dt>Adviser</dt><dd>${esc(r.adviser)}</dd></div>
+        <div><dt>Device ID</dt><dd>${esc(r.device)}</dd></div>
+        <div><dt>Connection</dt><dd>${connHTML(r)}</dd></div>
+        <div><dt>Signal</dt><dd>${SIGNAL_LABEL[r.status === 'offline' ? 0 : r.signal]}</dd></div>
+        <div><dt>Last status update</dt><dd>${relSpan(r.lastUpdate, `data-room-ts="${r.id}"`)}</dd></div>
+        <div><dt>Reported at</dt><dd>${fmtDateTime(r.lastUpdate)}</dd></div>
+      </dl>
+      <div>
+        <h3>Alert history</h3>
+        <ul class="history">${history.length ? history.map((a) =>
+          `<li><span>${esc(a.type)}<small>${fmtDateTime(a.receivedAt)}</small></span>${pill(ALERT_STATUS, a.status)}</li>`).join('') : '<li class="muted">No alerts recorded for this classroom.</li>'}</ul>
+      </div>
+      ${pending.length ? `<div class="alert-actions" style="justify-content:flex-start">${alertActions(pending[0])}</div>` : ''}
+    </div>`;
+    if (!dlg.open) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
+  }
+
+  function renderAll() {
+    renderBrand();
+    renderNavBadges();
+    renderBanner();
+    renderDashboard();
+    renderClassrooms();
+    renderAlertsView();
+    renderSettingsRooms();
+    if (state.openRoom && $('#roomDialog').open) renderDialog();
+  }
+
+  function refreshTimes() {
+    $$('[data-rel]').forEach((el) => { el.textContent = rel(Number(el.dataset.ts)); });
+    $('#clock').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' +
+      new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  }
+
+  /* ---------- 5. Actions (demo only: they just change `state`) ---------- */
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  function acknowledge(id) {
+    const a = state.alerts.find((x) => x.id === id);
+    if (!a || a.status !== 'active') return;
+    a.status = 'acknowledged';
+    a.ackAt = Date.now();
+    const r = roomById(a.roomId);
+    addActivity(`${r.code} ${a.type} alert acknowledged`, 'emergency');
+    renderAll();
+    toast(`Alert from ${r.code} acknowledged.`);
+  }
+
+  function resolve(id) {
+    const a = state.alerts.find((x) => x.id === id);
+    if (!a || a.status === 'resolved') return;
+    const now = Date.now();
+    if (a.status === 'active') a.ackAt = now;
+    a.status = 'resolved';
+    a.resolvedAt = now;
+    const r = roomById(a.roomId);
+    const stillOpen = openAlerts().some((x) => x.roomId === r.id);
+    if (!stillOpen && r.status === 'emergency') { r.status = 'normal'; r.lastUpdate = now; }
+    addActivity(`${r.code} ${r.name} alert resolved, status back to normal`, 'normal');
+    renderAll();
+    toast(`Alert from ${r.code} marked as resolved.`);
+  }
+
+  function simulateAlert() {
+    const pool = state.classrooms.filter((r) => r.status === 'normal');
+    if (!pool.length) { toast('No normal classrooms left to trigger. Resolve alerts or reset the demo.'); return; }
+    const r = pick(pool), type = pick(ALERT_TYPES), now = Date.now();
+    state.alerts.unshift({ id: 'al' + now, roomId: r.id, type, receivedAt: now, status: 'active' });
+    r.status = 'emergency';
+    r.lastUpdate = now;
+    addActivity(`${r.code} ${r.name} sent a ${type} alert`, 'emergency');
+    renderAll();
+    toast(`New alert: ${type} from ${r.code}.`);
+  }
+
+  function resetDemo() {
+    Object.assign(state, buildSampleData(Date.now()), { openRoom: null, filter: 'all', query: '' });
+    $('#search').value = '';
+    closeDialog();
+    renderAll();
+    toast('Demo data reset.');
+  }
+
+  // Pretend the ESP32 devices are checking in every few seconds.
+  function heartbeat() {
+    const online = state.classrooms.filter((r) => r.status !== 'offline');
+    if (!online.length) return;
+    const now = Date.now();
+    const picked = online.slice().sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * 3));
+    picked.forEach((r) => {
+      r.lastUpdate = now;
+      $$(`[data-room-ts="${r.id}"]`).forEach((el) => { el.dataset.ts = now; });
+    });
+    const r = picked[0];
+    addActivity(`${r.code} ${r.name} reported ${r.status === 'emergency' ? 'an active emergency' : 'normal conditions'}`, r.status === 'emergency' ? 'emergency' : 'normal');
+    renderFeed();
+    refreshTimes();
+  }
+
+  function closeDialog() {
+    const dlg = $('#roomDialog');
+    state.openRoom = null;
+    if (dlg.open) dlg.close();
+  }
+
+  /* ---------- 6. Navigation ---------- */
+  function showView(v) {
+    if (!VIEWS[v]) v = 'dashboard';
+    state.view = v;
+    document.body.dataset.view = v;
+    $$('.view').forEach((s) => { s.hidden = s.dataset.view !== v; });
+    $$('.nav-link, .tab').forEach((a) => {
+      if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    $('#pageTitle').textContent = VIEWS[v].title;
+    $('#pageSub').textContent = VIEWS[v].sub;
+    window.scrollTo(0, 0);
+  }
+
+  function go(v) {
+    showView(v);
+    try { if (location.hash !== '#' + VIEWS[v].hash) location.hash = VIEWS[v].hash; } catch (e) { /* hash not available: ignore */ }
+  }
+
+  const viewFromHash = () => Object.keys(VIEWS).find((k) => VIEWS[k].hash === location.hash.slice(1));
+
+  /* ---------- 7. Events & start-up ---------- */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-action]');
+    if (t) {
+      const act = t.dataset.action;
+      if (act === 'go') { e.preventDefault(); closeDialog(); go(t.dataset.view); }
+      else if (act === 'open-room') { state.openRoom = t.dataset.room; renderDialog(); }
+      else if (act === 'close-dialog') closeDialog();
+      else if (act === 'ack') acknowledge(t.dataset.alert);
+      else if (act === 'resolve') resolve(t.dataset.alert);
+      else if (act === 'simulate') simulateAlert();
+      else if (act === 'reset') resetDemo();
+      else if (act === 'filter') { state.filter = t.dataset.filter; renderClassrooms(); }
+      else if (act === 'save-school') {
+        const v = $('#schoolName').value.trim();
+        if (!v) { toast('Enter a school name first.'); return; }
+        state.school.name = v;
+        renderBrand();
+        toast('School name updated (demo only, not saved).');
+      }
+      return;
+    }
+    // Click on the dark backdrop closes the popup
+    if (e.target === $('#roomDialog')) closeDialog();
+  });
+
+  $('#roomDialog').addEventListener('close', () => { state.openRoom = null; });
+  $('#search').addEventListener('input', (e) => { state.query = e.target.value; renderClassrooms(); });
+  window.addEventListener('hashchange', () => { const v = viewFromHash(); if (v && v !== state.view) showView(v); });
+
+  renderAll();
+  showView(viewFromHash() || 'dashboard');
+  refreshTimes();
+  setInterval(refreshTimes, 1000);   // clock + "x s ago" labels
+  setInterval(heartbeat, 7000);      // fake device check-ins
+})();
+
+</script>
+</body>
+</html>

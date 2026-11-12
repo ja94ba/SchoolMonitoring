@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeClass Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-view="dashboard">
+
+<!-- Icon sprite: reused everywhere with <svg class="i"><use href="#i-name"/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-room" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M3 21h18M12 12h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+
+  <!-- ===== Sidebar (desktop) ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="i"><use href="#i-shield"/></svg></span>
+      <div class="brand-text"><strong>SafeClass</strong><small class="js-school">School name</small></div>
+    </div>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="nav-link" href="#dashboard" data-action="go" data-view="dashboard"><svg class="i"><use href="#i-dashboard"/></svg><span>Dashboard</span></a>
+      <a class="nav-link" href="#classrooms" data-action="go" data-view="classrooms"><svg class="i"><use href="#i-room"/></svg><span>Classrooms</span></a>
+      <a class="nav-link" href="#alerts" data-action="go" data-view="alerts"><svg class="i"><use href="#i-alert"/></svg><span>Emergency Alerts</span><span class="badge" data-alert-badge hidden></span></a>
+      <a class="nav-link" href="#app-settings" data-action="go" data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot"><span class="dot dot--on"></span>Demo mode · sample data</div>
+  </aside>
+
+  <div class="main">
+
+    <!-- ===== Top bar ===== -->
+    <header class="topbar">
+      <span class="brand-mark brand-mark--sm"><svg class="i"><use href="#i-shield"/></svg></span>
+      <div class="topbar-title">
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSub">Overview of classroom conditions</p>
+      </div>
+      <div class="topbar-right">
+        <div class="clock" id="clock" aria-hidden="true"></div>
+        <button class="bell" data-action="go" data-view="alerts" aria-label="Open emergency alerts">
+          <svg class="i"><use href="#i-alert"/></svg>
+          <span class="badge badge--bell" data-alert-badge hidden></span>
+        </button>
+        <div class="user">
+          <span class="avatar" aria-hidden="true">MR</span>
+          <div class="user-text"><b>Maria Reyes</b><small>Safety Coordinator</small></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div id="banner"></div>
+
+      <!-- ===== 1. Dashboard ===== -->
+      <section class="view" data-view="dashboard" aria-label="Dashboard">
+        <div class="summary" id="summary"></div>
+        <div class="dash-grid">
+          <div class="panel area-alerts">
+            <div class="panel-head"><h2>Active alerts</h2><a class="link" href="#alerts" data-action="go" data-view="alerts">View all</a></div>
+            <div class="alert-list" id="dashAlerts"></div>
+          </div>
+          <div class="panel panel--flush area-rooms">
+            <div class="panel-head panel-head--pad"><h2>Classroom status</h2><a class="link" href="#classrooms" data-action="go" data-view="classrooms">View all</a></div>
+            <div class="room-list room-list--compact" id="dashRooms"></div>
+          </div>
+          <div class="panel area-feed">
+            <div class="panel-head"><h2>Recent status updates</h2></div>
+            <ul class="feed" id="feed"></ul>
+          </div>
+          <div class="panel area-demo">
+            <div class="panel-head"><h2>Demo controls</h2></div>
+            <p class="muted small">For presentations. Triggers a sample alert on a random classroom so you can show how the dashboard reacts. No device is involved yet.</p>
+            <div class="btn-row">
+              <button class="btn btn--danger" data-action="simulate"><svg class="i"><use href="#i-play"/></svg>Simulate alert</button>
+              <button class="btn btn--ghost" data-action="reset"><svg class="i"><use href="#i-reset"/></svg>Reset demo data</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 2. Classrooms ===== -->
+      <section class="view" data-view="classrooms" aria-label="Classrooms" hidden>
+        <div class="toolbar">
+          <label class="search" for="search">
+            <svg class="i"><use href="#i-search"/></svg>
+            <input id="search" type="search" placeholder="Search room, grade, adviser or device" autocomplete="off">
+          </label>
+          <div class="chips" role="group" aria-label="Filter by status">
+            <button class="chip" data-action="filter" data-filter="all" aria-pressed="true">All <span class="count" data-count="all">0</span></button>
+            <button class="chip chip--normal" data-action="filter" data-filter="normal" aria-pressed="false">Normal <span class="count" data-count="normal">0</span></button>
+            <button class="chip chip--emergency" data-action="filter" data-filter="emergency" aria-pressed="false">Emergency <span class="count" data-count="emergency">0</span></button>
+            <button class="chip chip--offline" data-action="filter" data-filter="offline" aria-pressed="false">Offline <span class="count" data-count="offline">0</span></button>
+          </div>
+        </div>
+        <div class="panel panel--flush">
+          <div class="room-head" aria-hidden="true"><span>Classroom</span><span>Status</span><span>Connection</span><span>Last update</span><span></span></div>
+          <div class="room-list" id="roomList"></div>
+        </div>
+        <p class="muted small result-note" id="resultNote"></p>
+      </section>
+
+      <!-- ===== 3. Emergency alerts ===== -->
+      <section class="view" data-view="alerts" aria-label="Emergency alerts" hidden>
+        <h2 class="section-title">Active alerts <span class="count-pill" id="activeCount">0</span></h2>
+        <div class="alert-list" id="alertsActive"></div>
+        <h2 class="section-title section-title--muted">Resolved <span class="count-pill count-pill--muted" id="resolvedCount">0</span></h2>
+        <div class="alert-list" id="alertsResolved"></div>
+      </section>
+
+      <!-- ===== 4. Settings (placeholders) ===== -->
+      <section class="view" data-view="settings" aria-label="Settings" hidden>
+        <div class="settings-grid">
+          <div class="panel">
+            <div class="panel-head"><h2>School</h2></div>
+            <div class="field"><label for="schoolName">School name</label><input id="schoolName" type="text" maxlength="60"></div>
+            <div class="field"><label for="schoolId">School ID</label><input id="schoolId" type="text" value="301234 (sample)" readonly></div>
+            <div class="field"><label for="schoolAddr">Address</label><input id="schoolAddr" type="text" value="Poblacion, Sample City (placeholder)" readonly></div>
+            <button class="btn btn--primary" data-action="save-school">Save school name</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>Account</h2></div>
+            <div class="field"><label for="accName">Full name</label><input id="accName" type="text" value="Maria Reyes" readonly></div>
+            <div class="field"><label for="accRole">Role</label><input id="accRole" type="text" value="Safety Coordinator" readonly></div>
+            <div class="field"><label for="accEmail">Email</label><input id="accEmail" type="text" value="m.reyes@school.example" readonly></div>
+            <div class="btn-row">
+              <button class="btn btn--ghost" disabled>Change password</button>
+              <button class="btn btn--ghost" disabled>Sign out</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>Notification preferences</h2></div>
+            <ul class="toggles">
+              <li><div><b>In-app alert banner</b><small>Show a red banner on every screen during an alert.</small></div><label class="switch"><input type="checkbox" checked aria-label="In-app alert banner"><span class="track"></span></label></li>
+              <li><div><b>Alert sound</b><small>Play a tone when a new alert arrives.</small></div><label class="switch"><input type="checkbox" checked aria-label="Alert sound"><span class="track"></span></label></li>
+              <li><div><b>Push notifications</b><small>Notify this device even when the app is closed.</small></div><label class="switch"><input type="checkbox" checked aria-label="Push notifications"><span class="track"></span></label></li>
+              <li><div><b>SMS to security staff</b><small>Text the designated responders.</small></div><label class="switch"><input type="checkbox" aria-label="SMS to security staff"><span class="track"></span></label></li>
+              <li><div><b>Daily email summary</b><small>Send a status report each afternoon.</small></div><label class="switch"><input type="checkbox" aria-label="Daily email summary"><span class="track"></span></label></li>
+            </ul>
+            <p class="muted small">Placeholders for now. These switches are not connected to anything yet.</p>
+          </div>
+
+          <div class="panel panel--flush span-2">
+            <div class="panel-head panel-head--pad">
+              <h2>Registered classrooms <span class="count-pill count-pill--muted" id="regCount">0</span></h2>
+              <button class="btn btn--ghost btn--sm" disabled>Add classroom</button>
+            </div>
+            <div class="reg-head" aria-hidden="true"><span>Room</span><span>Classroom</span><span>Device ID</span><span>Location</span></div>
+            <div id="regList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Bottom navigation (phones) ===== -->
+<nav class="bottom-nav" aria-label="Main navigation">
+  <a class="tab" href="#dashboard" data-action="go" data-view="dashboard"><svg class="i"><use href="#i-dashboard"/></svg><span>Dashboard</span></a>
+  <a class="tab" href="#classrooms" data-action="go" data-view="classrooms"><svg class="i"><use href="#i-room"/></svg><span>Classrooms</span></a>
+  <a class="tab" href="#alerts" data-action="go" data-view="alerts"><svg class="i"><use href="#i-alert"/></svg><span>Alerts</span><span class="badge badge--tab" data-alert-badge hidden></span></a>
+  <a class="tab" href="#app-settings" data-action="go" data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></a>
+</nav>
+
+<!-- Classroom details popup -->
+<dialog id="roomDialog" class="dialog" aria-labelledby="dlgTitle"><div id="dlgBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Order matters: data first, then app logic -->
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
